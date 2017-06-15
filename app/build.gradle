@@ -36,6 +36,6 @@ publish {
     groupId = 'com.mtsdealersolutions'
     artifactId = 'infinite_view_pager_w_tabs'
     publishVersion = '1.0.01'
-    desc = 'Add Infinite Scroll to any ViewPager, PagerAdapter, and TabLayout'
-    website = 'https:/ / github.com / memorex386 / Android - WebView - LocalWebServer'
+    desc = 'An Infinite Scroll attatchment for a standard ViewPager, PagerAdapter (or FragmentStatePagerAdapter), and TabLayout'
+    website = 'https://github.com/memorex386/infinite-scroll-viewpager-w-tabs'
 }
