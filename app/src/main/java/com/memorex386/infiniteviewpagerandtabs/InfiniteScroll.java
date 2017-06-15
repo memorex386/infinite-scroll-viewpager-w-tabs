@@ -1,45 +1,111 @@
 package com.memorex386.infiniteviewpagerandtabs;
 
+import android.content.Context;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.support.annotation.DrawableRes;
+import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.view.View;
 import android.view.ViewGroup;
-
-public class InfiniteScroll {
+ 
+public class InfiniteScroll<T extends PagerAdapter> {
 
     private ViewPager viewPager;
     private TabLayout tabLayout;
     private InfinitePagerInterface infinitePagerAdapter;
+    private Class<T> tClass;
 
-    public InfiniteScroll(ViewPager viewPager, PagerAdapter pagerAdapter) {
-        this(viewPager, pagerAdapter, null);
+    public static InfiniteScroll<InfinitePagerAdapter> InfiniteScroll(ViewPager viewPager, PagerAdapter pagerAdapter) {
+        return InfiniteScroll(viewPager, pagerAdapter, null);
     }
 
+    public static InfiniteScroll<InfinitePagerAdapter> InfiniteScroll(ViewPager viewPager, PagerAdapter pagerAdapter, TabLayout tabLayout) {
+        return new InfiniteScroll<>(InfinitePagerAdapter.class, viewPager, pagerAdapter, tabLayout);
+    }
 
-    public InfiniteScroll(ViewPager viewPager, PagerAdapter pagerAdapter, TabLayout tabLayout) {
+    public static InfiniteScroll<InfiniteFragmentStatePagerAdapter> InfiniteScroll(ViewPager viewPager, FragmentManager fragmentManager, FragmentStatePagerAdapter pagerAdapter) {
+        return InfiniteScroll(viewPager, fragmentManager, pagerAdapter, null);
+    }
+
+    public static InfiniteScroll<InfiniteFragmentStatePagerAdapter> InfiniteScroll(ViewPager viewPager, FragmentManager fragmentManager, FragmentStatePagerAdapter pagerAdapter, TabLayout tabLayout) {
+        return new InfiniteScroll<>(InfiniteFragmentStatePagerAdapter.class, viewPager, fragmentManager, pagerAdapter, tabLayout);
+    }
+
+    public static InfiniteScroll<InfiniteFragmentStatePagerAdapter> InfiniteScroll(ViewPager viewPager, FragmentManager fragmentManager, InfiniteFragmentStatePagerAdapter pagerAdapter) {
+        return InfiniteScroll(viewPager, fragmentManager, pagerAdapter, null);
+    }
+
+    public static InfiniteScroll<InfiniteFragmentStatePagerAdapter> InfiniteScroll(ViewPager viewPager, FragmentManager fragmentManager, InfiniteFragmentStatePagerAdapter pagerAdapter, TabLayout tabLayout) {
+        return new InfiniteScroll<>(InfiniteFragmentStatePagerAdapter.class, viewPager,fragmentManager, pagerAdapter, tabLayout);
+    }
+
+    public static InfiniteScroll<InfinitePagerAdapter> InfiniteScroll(ViewPager viewPager, InfinitePagerAdapter pagerAdapter) {
+        return InfiniteScroll(viewPager, pagerAdapter, null);
+    }
+
+    public static InfiniteScroll<InfinitePagerAdapter> InfiniteScroll(ViewPager viewPager, InfinitePagerAdapter pagerAdapter, TabLayout tabLayout) {
+        return new InfiniteScroll<>(InfinitePagerAdapter.class, viewPager, pagerAdapter, tabLayout);
+    }
+
+    private InfiniteScroll(Class<T> tClass, ViewPager viewPager, PagerAdapter pagerAdapter, TabLayout tabLayout) {
         this.viewPager = viewPager;
         this.tabLayout = tabLayout;
         infinitePagerAdapter = new InfinitePagerAdapter(pagerAdapter);
+        this.tClass = tClass;
     }
 
-    public InfiniteScroll(ViewPager viewPager, FragmentManager fragmentManager, FragmentStatePagerAdapter pagerAdapter) {
-        this(viewPager, fragmentManager, pagerAdapter, null);
-    }
-
-    public InfiniteScroll(ViewPager viewPager, FragmentManager fragmentManager, FragmentStatePagerAdapter pagerAdapter, TabLayout tabLayout) {
+    private InfiniteScroll(Class<T> tClass, ViewPager viewPager, FragmentManager fragmentManager, FragmentStatePagerAdapter pagerAdapter, TabLayout tabLayout) {
         this.viewPager = viewPager;
         this.tabLayout = tabLayout;
         infinitePagerAdapter = new InfiniteFragmentStatePagerAdapter(fragmentManager, pagerAdapter);
+        this.tClass = tClass;
     }
 
-    public InfiniteScroll setTabLayout(TabLayout tabLayout) {
+    private InfiniteScroll(Class<T> tClass, ViewPager viewPager, FragmentManager fragmentManager, InfiniteFragmentStatePagerAdapter pagerAdapter, TabLayout tabLayout) {
+        this.viewPager = viewPager;
+        this.tabLayout = tabLayout;
+        infinitePagerAdapter = new InfiniteFragmentStatePagerAdapter(fragmentManager, pagerAdapter);
+        this.tClass = tClass;
+    }
+
+    private InfiniteScroll(Class<T> tClass, ViewPager viewPager, InfinitePagerAdapter pagerAdapter, TabLayout tabLayout) {
+        this.viewPager = viewPager;
+        this.tabLayout = tabLayout;
+        infinitePagerAdapter = new InfinitePagerAdapter(pagerAdapter);
+        this.tClass = tClass;
+    }
+
+    /**
+     * This method will take a TabLayout and attach it to the ViewPager
+     *
+     * @param tabLayout TabLayout to attach, all pre-existing tabs will be removed
+     */
+    public InfiniteScroll setTabLayout(TabLayout tabLayout){
+        return setTabLayout(tabLayout, false);
+    }
+
+
+    /**
+     * This method will take a TabLayout and attach it to the ViewPager
+     *
+     * @param tabLayout TabLayout to attach
+     * @param dontRemoveAllTabs The TabLayout is cleared of existing tabs by default,
+     *                          set to false and it will not clear the tabs before it
+     *                          creates the new ones
+     */
+    public InfiniteScroll setTabLayout(TabLayout tabLayout, boolean dontRemoveAllTabs) {
         this.tabLayout = tabLayout;
         if (tabLayout == null) return this;
+
+       if (!dontRemoveAllTabs) tabLayout.removeAllTabs();
 
         for (int i = 0; i < infinitePagerAdapter.getRealCount(); i++) {
             TabLayout.Tab tab = tabLayout.newTab();
@@ -90,7 +156,7 @@ public class InfiniteScroll {
     }
 
     /*
-    This will attach the adapter to the viewPager and TabLayout (if applicable)
+    * This will attach the adapter to the viewPager and TabLayout (if a TabLayout has been attached)
      */
     public InfiniteScroll attachAdapter() {
         viewPager.setAdapter((PagerAdapter) infinitePagerAdapter);
@@ -104,10 +170,49 @@ public class InfiniteScroll {
         return this;
     }
 
-    public InfiniteScroll setTabIndicator(TabIndicator tabIndicator){
-        tabLayout.setBackground();
+    /**
+     * This method will set the Tab Indicators using a predefined method
+     *
+     * @param tabIndicator predefined tab indicator
+     */
+    public InfiniteScroll setTabIndicator(@NonNull TabIndicator tabIndicator){
+       return setTabIndicator(tabIndicator.drawableRes);
     }
 
+    /**
+     * This method will set the Tab Indicators using a predefined method
+     *
+     * @param drawableRes the Drawable to use for the TabLayout,
+     *                    best if this is a selector drawable using state-pressed
+     */
+    public InfiniteScroll setTabIndicator(@DrawableRes int drawableRes){
+        tabLayout.setBackground(ContextCompat.getDrawable(tabLayout.getContext(), drawableRes));
+        return this;
+    }
+
+    /**
+     * This method will set the Tab Indicators using a predefined method
+     *
+     * @param selectedDrawableRes The drawable to display when selected
+     * @param unselectedDrawableRes The drawable to display when unselected
+     */
+    public InfiniteScroll setTabIndicator(@DrawableRes int selectedDrawableRes, @DrawableRes int unselectedDrawableRes) {
+        tabLayout.setBackground(createStateListDrawable(tabLayout.getContext(), selectedDrawableRes, unselectedDrawableRes));
+        return this;
+    }
+
+    /**
+     * This method will set the Tab Indicators using a predefined method
+     *
+     * @param selectedDrawableRes The drawable to display when selected
+     * @param unselectedDrawableRes The drawable to display when unselected
+     */
+    public static StateListDrawable createStateListDrawable(Context context, @DrawableRes int selectedDrawableRes, @DrawableRes int unselectedDrawableRes) {
+        StateListDrawable res = new StateListDrawable();
+        res.addState(new int[]{android.R.attr.state_pressed}, ContextCompat.getDrawable(context, selectedDrawableRes));
+        res.addState(new int[]{}, ContextCompat.getDrawable(context, unselectedDrawableRes));
+        return res;
+    }
 
     public static class InfinitePagerAdapter extends PagerAdapter implements InfinitePagerInterface<PagerAdapter> {
 
@@ -187,13 +292,27 @@ public class InfiniteScroll {
         }
     }
 
-    private interface InfinitePagerInterface<T extends PagerAdapter> {
+    public interface InfinitePagerInterface<T extends PagerAdapter> {
+        /**
+         * This method will return the count of the adapter
+         */
         int getRealCount();
 
+        /**
+         * This method will return the infinite count
+         */
         int getCount();
 
+        /**
+         * This method will return the real position of the real adapter
+         *
+         */
         int getRealPosition(int infinitePosition);
 
+        /**
+         * This method will return the real adapter
+         *
+         */
         T getRealAdapter();
     }
 
@@ -209,8 +328,8 @@ public class InfiniteScroll {
         return infinitePagerAdapter.getRealAdapter();
     }
 
-    public InfinitePagerInterface getInfinitePagerAdapter() {
-        return infinitePagerAdapter;
+    public T getInfinitePagerAdapter() {
+        return (T)infinitePagerAdapter;
     }
 
     public enum TabIndicator {
