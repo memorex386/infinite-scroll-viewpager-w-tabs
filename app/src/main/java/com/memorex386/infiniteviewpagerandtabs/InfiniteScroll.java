@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Build;
+import android.os.Parcelable;
 import android.support.annotation.DrawableRes;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
@@ -15,6 +16,8 @@ import android.support.v4.view.ViewPager;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
+
+import java.util.ArrayList;
 
 public class InfiniteScroll<T extends PagerAdapter, ISitem extends InfiniteScroll> {
 
@@ -65,28 +68,28 @@ public class InfiniteScroll<T extends PagerAdapter, ISitem extends InfiniteScrol
     InfiniteScroll(Class<T> tClass, ViewPager viewPager, PagerAdapter pagerAdapter, TabLayout tabLayout) {
         this.viewPager = viewPager;
         this.tabLayout = tabLayout;
-        infinitePagerAdapter = new InfinitePagerAdapter(pagerAdapter);
+        infinitePagerAdapter = new InfinitePagerAdapter(pagerAdapter, viewPager);
         this.tClass = tClass;
     }
 
     InfiniteScroll(Class<T> tClass, ViewPager viewPager, FragmentManager fragmentManager, FragmentStatePagerAdapter pagerAdapter, TabLayout tabLayout) {
         this.viewPager = viewPager;
         this.tabLayout = tabLayout;
-        infinitePagerAdapter = new InfiniteFragmentStatePagerAdapter(fragmentManager, pagerAdapter);
+        infinitePagerAdapter = new InfiniteFragmentStatePagerAdapter(fragmentManager, pagerAdapter, viewPager);
         this.tClass = tClass;
     }
 
     InfiniteScroll(Class<T> tClass, ViewPager viewPager, FragmentManager fragmentManager, InfiniteFragmentStatePagerAdapter pagerAdapter, TabLayout tabLayout) {
         this.viewPager = viewPager;
         this.tabLayout = tabLayout;
-        infinitePagerAdapter = new InfiniteFragmentStatePagerAdapter(fragmentManager, pagerAdapter);
+        infinitePagerAdapter = new InfiniteFragmentStatePagerAdapter(fragmentManager, pagerAdapter, viewPager);
         this.tClass = tClass;
     }
 
     InfiniteScroll(Class<T> tClass, ViewPager viewPager, InfinitePagerAdapter pagerAdapter, TabLayout tabLayout) {
         this.viewPager = viewPager;
         this.tabLayout = tabLayout;
-        infinitePagerAdapter = new InfinitePagerAdapter(pagerAdapter);
+        infinitePagerAdapter = new InfinitePagerAdapter(pagerAdapter, viewPager);
         this.tClass = tClass;
     }
 
@@ -128,8 +131,9 @@ public class InfiniteScroll<T extends PagerAdapter, ISitem extends InfiniteScrol
             int currentPosition = viewPager.getCurrentItem();
             int fakeCurrentPosition = infinitePagerAdapter.getRealPosition(currentPosition);
             int addAmount = tabPosition - fakeCurrentPosition;
-            if (viewPager.getCurrentItem() != currentPosition + addAmount)
+            if (viewPager.getCurrentItem() != currentPosition + addAmount) {
                 viewPager.setCurrentItem(currentPosition + addAmount, true);
+            }
         }
 
         @Override
@@ -152,7 +156,9 @@ public class InfiniteScroll<T extends PagerAdapter, ISitem extends InfiniteScrol
         @Override
         public void onPageSelected(int position) {
             TabLayout.Tab tab = InfiniteScroll.this.tabLayout.getTabAt(infinitePagerAdapter.getRealPosition(position));
-            if (tab != null) tab.select();
+            if (tab != null) {
+                tab.select();
+            }
         }
 
         @Override
@@ -196,7 +202,13 @@ public class InfiniteScroll<T extends PagerAdapter, ISitem extends InfiniteScrol
 
         attachAdapterRan = true;
 
-        viewPager.setAdapter((PagerAdapter) infinitePagerAdapter);
+        if (infinitePagerAdapter instanceof InfiniteFragmentStatePagerAdapter) {
+            viewPager.setAdapter((InfiniteFragmentStatePagerAdapter) infinitePagerAdapter);
+        } else if (infinitePagerAdapter instanceof InfinitePagerAdapter) {
+            viewPager.setAdapter((InfinitePagerAdapter) infinitePagerAdapter);
+        } else {
+            throw new RuntimeException("What is this adapter, should be an inifite Scroll adapter?");
+        }
 
         setTabLayout(tabLayout);
 
@@ -300,12 +312,27 @@ public class InfiniteScroll<T extends PagerAdapter, ISitem extends InfiniteScrol
         return (ISitem) this;
     }
 
+    public static class RealPositionsList extends ArrayList<Integer> {
+
+        @Override
+        public boolean contains(Object o) {
+            boolean doesContain = super.contains(o);
+            if (doesContain) return true;
+            for (Integer integer : this) {
+                if (integer == (int) o) return true;
+            }
+            return false;
+        }
+    }
+
     public static class InfinitePagerAdapter extends PagerAdapter implements InfinitePagerInterface<PagerAdapter> {
 
+        private final ViewPager viewPager;
         private PagerAdapter pagerAdapter;
 
-        public InfinitePagerAdapter(PagerAdapter pagerAdapter) {
+        public InfinitePagerAdapter(PagerAdapter pagerAdapter, ViewPager viewPager) {
             this.pagerAdapter = pagerAdapter;
+            this.viewPager = viewPager;
         }
 
         /**
@@ -333,22 +360,26 @@ public class InfiniteScroll<T extends PagerAdapter, ISitem extends InfiniteScrol
 
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
-            return pagerAdapter.instantiateItem(container, getRealPosition(position));
+            int realPosition = getRealPosition(position);
+            return pagerAdapter.instantiateItem(container, realPosition);
         }
 
         @Override
         public Object instantiateItem(View container, int position) {
-            return pagerAdapter.instantiateItem(container, getRealPosition(position));
+            int realPosition = getRealPosition(position);
+            return pagerAdapter.instantiateItem(container, realPosition);
         }
 
         @Override
         public void destroyItem(ViewGroup container, int position, Object object) {
-            pagerAdapter.destroyItem(container, getRealPosition(position), object);
+            int realPosition = getRealPosition(position);
+            pagerAdapter.destroyItem(container, realPosition, object);
         }
 
         @Override
         public void destroyItem(View container, int position, Object object) {
-            pagerAdapter.destroyItem(container, getRealPosition(position), object);
+            int realPosition = getRealPosition(position);
+            pagerAdapter.destroyItem(container, realPosition, object);
         }
 
         @Override
@@ -367,16 +398,28 @@ public class InfiniteScroll<T extends PagerAdapter, ISitem extends InfiniteScrol
 
     public static class InfiniteFragmentStatePagerAdapter extends FragmentStatePagerAdapter implements InfinitePagerInterface<FragmentStatePagerAdapter> {
 
+        private final ViewPager viewPager;
         FragmentStatePagerAdapter fragmentStatePagerAdapter;
 
-        public InfiniteFragmentStatePagerAdapter(FragmentManager fm, FragmentStatePagerAdapter fragmentStatePagerAdapter) {
+        public InfiniteFragmentStatePagerAdapter(FragmentManager fm, FragmentStatePagerAdapter fragmentStatePagerAdapter, ViewPager viewPager) {
             super(fm);
             this.fragmentStatePagerAdapter = fragmentStatePagerAdapter;
+            this.viewPager = viewPager;
         }
 
         @Override
         public Fragment getItem(int position) {
-            return null;
+            return fragmentStatePagerAdapter.getItem(getRealPosition(position));
+        }
+
+        @Override
+        public void setPrimaryItem(ViewGroup container, int position, Object object) {
+            fragmentStatePagerAdapter.setPrimaryItem(container, getRealPosition(position), object);
+        }
+
+        @Override
+        public void setPrimaryItem(View container, int position, Object object) {
+            fragmentStatePagerAdapter.setPrimaryItem(container, getRealPosition(position), object);
         }
 
         /**
@@ -405,27 +448,64 @@ public class InfiniteScroll<T extends PagerAdapter, ISitem extends InfiniteScrol
 
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
-            return fragmentStatePagerAdapter.instantiateItem(container, getRealPosition(position));
+            int realPosition = getRealPosition(position);
+            return fragmentStatePagerAdapter.instantiateItem(container, realPosition);
         }
 
         @Override
         public Object instantiateItem(View container, int position) {
-            return fragmentStatePagerAdapter.instantiateItem(container, getRealPosition(position));
+            int realPosition = getRealPosition(position);
+            return fragmentStatePagerAdapter.instantiateItem(container, realPosition);
         }
 
         @Override
         public void destroyItem(ViewGroup container, int position, Object object) {
-            fragmentStatePagerAdapter.destroyItem(container, getRealPosition(position), object);
+            if (!shouldBeInstantiated(position))
+                fragmentStatePagerAdapter.destroyItem(container, getRealPosition(position), object);
+        }
+
+        public boolean shouldBeInstantiated(int position) {
+            int realPosition = getRealPosition(position);
+            for (int i = viewPager.getCurrentItem() - viewPager.getOffscreenPageLimit(); i <= viewPager.getCurrentItem() + viewPager.getOffscreenPageLimit(); i++) {
+                if (i < 0) continue;
+                if (i >= getCount()) break;
+                int thisPos = getRealPosition(i);
+                if (thisPos == realPosition) return true;
+            }
+            return false;
         }
 
         @Override
         public void destroyItem(View container, int position, Object object) {
-            fragmentStatePagerAdapter.destroyItem(container, getRealPosition(position), object);
+            if (!shouldBeInstantiated(position))
+                fragmentStatePagerAdapter.destroyItem(container, getRealPosition(position), object);
         }
 
         @Override
         public boolean isViewFromObject(View view, Object object) {
             return fragmentStatePagerAdapter.isViewFromObject(view, object);
+        }
+
+
+        @Override
+        public void startUpdate(ViewGroup container) {
+            fragmentStatePagerAdapter.startUpdate(container);
+        }
+
+        @Override
+        public void finishUpdate(ViewGroup container) {
+            fragmentStatePagerAdapter.finishUpdate(container);
+        }
+
+
+        @Override
+        public Parcelable saveState() {
+            return fragmentStatePagerAdapter.saveState();
+        }
+
+        @Override
+        public void restoreState(Parcelable state, ClassLoader loader) {
+            fragmentStatePagerAdapter.restoreState(state, loader);
         }
 
         /**

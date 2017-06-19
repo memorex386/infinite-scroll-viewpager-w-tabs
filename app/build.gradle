@@ -8,7 +8,7 @@ android {
         minSdkVersion 14
         targetSdkVersion 25
         versionCode 1
-        versionName "1.19"
+        versionName "1.25"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -35,7 +35,7 @@ publish {
     userOrg = 'memorex386'
     groupId = 'com.mtsdealersolutions'
     artifactId = 'infinite_view_pager_w_tabs'
-    publishVersion = '1.0.19'
+    publishVersion = '1.0.26'
     desc = 'An Infinite Scroll attatchment for a standard ViewPager, PagerAdapter (or FragmentStatePagerAdapter), and TabLayout'
     website = 'https://github.com/memorex386/infinite-scroll-viewpager-w-tabs'
 }
